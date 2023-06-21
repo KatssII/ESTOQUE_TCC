@@ -1,0 +1,137 @@
+<td>
+  <a href="#" data-produto="<?php echo $linha['id_chave']; ?>" class="btn btn-danger btn-nanana bi bi-trash delete-link" style="font-size: 1.5rem"></a>
+</td>
+
+<script>
+  // Função para lidar com o clique no link de exclusão
+  function handleDeleteClick(event) {
+    event.preventDefault();
+
+    // Exibir caixa de diálogo de senha
+    var senha = prompt("Digite a senha para excluir o código:");
+
+    // Verificar a senha
+    if (senha === "senha123") { // Substitua "senha123" pela senha correta
+      // Ação de exclusão do código aqui
+      var produtoId = event.target.getAttribute("data-produto");
+      // Faça algo com o produtoId, como enviar uma solicitação AJAX para o servidor para excluir o código
+
+      // Exemplo de ação: redirecionamento para uma página de confirmação
+      window.location.href = "pagina_de_confirmacao.php";
+    } else {
+      alert("Senha incorreta. A exclusão não pode ser realizada.");
+    }
+  }
+
+  // Adicionar evento de clique ao link de exclusão
+  var deleteLinks = document.getElementsByClassName("delete-link");
+  for (var i = 0; i < deleteLinks.length; i++) {
+    deleteLinks[i].addEventListener("click", handleDeleteClick);
+  }
+</script>
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+
+html
+
+<form method="post" action="excluir_item.php">
+  <input type="password" name="senha" placeholder="Digite sua senha" required>
+  <input type="hidden" name="item_id" value="<?php echo $id_do_item; ?>">
+  <input type="submit" value="Confirmar Exclusão">
+</form>
+
+
+No arquivo excluir_item.php
+
+<?php
+// Verificar a senha
+$senha_correta = "senha123"; // Defina a senha correta
+$senha_inserida = $_POST['senha'];
+
+if ($senha_inserida !== $senha_correta) {
+  echo "Senha incorreta. A exclusão não pode ser realizada.";
+} else {
+  // A senha está correta, execute a ação de exclusão
+  $item_id = $_POST['item_id'];
+  // Implemente aqui a lógica para excluir o item com o ID fornecido
+
+  echo "Item excluído com sucesso!";
+}
+?>
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+tabela chave pdf
+
+<?php
+require("../conn.php");
+require("../protected.php");
+require("../dompdf/autoload.inc.php");
+
+use Dompdf\Dompdf;
+
+$tabela = $pdo->prepare("SELECT id_chave, nome_chave, data_chave, disponivel_chave, responsavel FROM chaves");
+$tabela->execute();
+$rowTabela = $tabela->fetchAll();
+
+// Cria uma instância do Dompdf
+$dompdf = new Dompdf();
+
+// Inicia a construção da tabela HTML
+$html = '<h2 style="text-align: center;">RELATÓRIO DE CHAVES</h2>';
+$html .= '<table style="margin: 0 auto; border-collapse: collapse;">';
+$html .= '<tr><th style="padding: 10px; border: 1px solid black;">ID Chave</th><th style="padding: 10px; border: 1px solid black;">Nome Chave</th><th style="padding: 10px; border: 1px solid black;">Data Chave</th><th style="padding: 10px; border: 1px solid black;">Disponível</th><th style="padding: 10px; border: 1px solid black;">Responsável</th></tr>';
+
+// Percorre os dados da tabela
+foreach ($rowTabela as $linha) {
+    $idChave = $linha['id_chave'];
+    $nomeChave = $linha['nome_chave'];
+    $dataChave = $linha['data_chave'];
+    $disponivelChave = $linha['disponivel_chave'];
+    $responsavel = $linha['responsavel'];
+
+    // Adiciona uma nova linha à tabela com os dados
+    $html .= '<tr>';
+    $html .= '<td style="padding: 10px; border: 1px solid black;">' . $idChave . '</td>';
+    $html .= '<td style="padding: 10px; border: 1px solid black;">' . $nomeChave . '</td>';
+    $html .= '<td style="padding: 10px; border: 1px solid black;">' . $dataChave . '</td>';
+    $html .= '<td style="padding: 10px; border: 1px solid black;">' . $disponivelChave . '</td>';
+    $html .= '<td style="padding: 10px; border: 1px solid black;">' . $responsavel . '</td>';
+    $html .= '</tr>';
+}
+
+// Fecha a tabela HTML
+$html .= '</table>';
+
+// Carrega o conteúdo HTML no Dompdf
+$dompdf->loadHtml($html);
+
+// Renderiza o PDF
+$dompdf->render();
+
+// Define o nome do arquivo com a data de download
+$fileName = 'TabelaChaves-' . date('Y-m-d') . '.pdf';
+
+// Obtém o conteúdo do PDF gerado
+$output = $dompdf->output();
+
+// Grava o conteúdo em um arquivo
+file_put_contents($fileName, $output);
+
+// Define os cabeçalhos para download
+header('Content-Type: application/pdf');
+header('Content-Disposition: attachment; filename="' . $fileName . '"');
+
+// Envia o PDF para o navegador
+readfile($fileName);
+exit;
+?>
+
+
+
+------------------------------------------------------------------------------------------------------------------
+
+
